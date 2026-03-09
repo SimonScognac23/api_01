@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
     public function index()
     {
-        $books = Book::all();
+        $books = Book::all(); // verifichiamo solo se il libro esiste, non se l'utente è autorizzato a vederlo
         return response()->json([
             'data' => $books,
             'links' => [
@@ -99,7 +100,7 @@ class BookController extends Controller
             return response()->json(['error' => 'Book not found'], 404);
         }
 
-        // SECURE
+        // SECURE  // Verifichiamo se l'utente è autenticato e se è il proprietario del libro prima di consentire l'aggiornamento
         // if(!$user = Auth::user()){
         //     return response()->json(['error' => 'Not autorised'], 401);
         // }
@@ -110,6 +111,17 @@ class BookController extends Controller
         // UNSECURE
         // Missing Validation
         // Missing Authorization Check
+
+        // APPUNTI PUNTO 66 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        // Verifichiamo se l'utente è autenticato
+        if ($book->user_id !== auth()->id()) { // Verifichiamo se l'utente autenticato è il proprietario del libro
+            return response()->json(['error' => 'Not authorized'], 403); // Restituiamo un errore 403 Forbidden se l'utente non è autorizzato a modificare il libro
+        } // Se l'utente è autorizzato, procediamo con l'aggiornamento del libro
+
+        // FINE APPUNTI PUNTO 66//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
         $book->update($request->all());
 
         return response()->json([
@@ -133,18 +145,28 @@ class BookController extends Controller
 
     public function destroy($id)
     {
-        $book = Book::find($id);
+        $book = Book::find($id); // verifichiamo solo se il libro esiste, non se l'utente è autorizzato a cancellarlo
 
-        if (!$book) {
+        if (!$book) { // Stiamo verificando solo se il libro esiste, non se l'utente è autorizzato a cancellarlo
             return response()->json(['error' => 'Book not found'], 404);
         }
-        // SECURE
+        // SECURE // Verifichiamo se l'utente è autenticato e se è il proprietario del libro prima di consentire la cancellazione
         // if(!$user = Auth::user()){
         //     return response()->json(['error' => 'Not autorised'], 401);
         // }
         // if($user->id != $book->user_id){
         //     return response()->json(['error' => 'Not autorised'], 401);
         // }
+
+        // APPUNTI PUNTO 66 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        // Verifichiamo se l'utente è autenticato
+
+        if ($book->user_id !== auth()->id()) { // Verifichiamo se l'utente autenticato è il proprietario del libro
+            return response()->json(['error' => 'Not authorized'], 403); // Restituiamo un errore 403 Forbidden se l'utente non è autorizzato a cancellare il libro
+        } // Se l'utente è autorizzato, procediamo con la cancellazione del libro
+
+        // FINE APPUNTI PUNTO 66//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7
 
         // UNSECURE
         $book->delete();
